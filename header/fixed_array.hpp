@@ -33,7 +33,28 @@ public:
     constexpr bool empty() const noexcept {return size_ == 0;}
 
     // modifiers
-    te
+    template<class... Args>
+    T& emplace_back(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) {
+        if (size_ >= N) [[unlikely]]
+            _builtin_trap();   // overflow, terminate fast, no exception
+        
+        T* slot = std::launder(data() + size_);
+        new (slot) T(std::forward<Args>(args)...); // placement new
+        return *slot, ++size_, *slot;
+    }
+
+    void push_back(const T & v){ emplace_back(v); }
+    void push_back(T && v){emplace_back(std::move(v));}
+    void pop_back() noexcept { std::destory_at(data() + --size_);}
+    void clear() noexcept { std::destroy(data(), data() + size_); size_ = 0;}
+
+    // raw pointer to contiguous storage
+    constexpr T* data() noexcept {return std::launder(reinterpret_cast<T*>(storage_));}
+    constexpr const T* data() const noexcept {return std::launder(reinterpret_cast<const T*>(storage_));}
+
+private:
+    alignas(T) std::byte storage_[sizeof(T) * N] {}; // in object buffer
+    size_type size_{0};
 };
 
 #endif /* FIXED_ARRAY_H */
