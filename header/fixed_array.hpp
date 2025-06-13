@@ -24,8 +24,8 @@ public:
     FixedArray& operator=(const FixedArray&) = delete;
 
     // element access
-    constexpr T& operator[](size_type index) noexcept {return data_[index];}
-    constexpr const T& operator[](size_type index) const noexcept {return data_[index];}
+    constexpr T& operator[](size_type index) noexcept {return data()[index];}
+    constexpr const T& operator[](size_type index) const noexcept {return data()[index];}
 
     // size / capacity
     constexpr size_type size() const noexcept {return size_;}
@@ -36,7 +36,7 @@ public:
     template<class... Args>
     T& emplace_back(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>) {
         if (size_ >= N) [[unlikely]]
-            _builtin_trap();   // overflow, terminate fast, no exception
+            __builtin_trap();   // overflow, terminate fast, no exception
         
         T* slot = std::launder(data() + size_);
         new (slot) T(std::forward<Args>(args)...); // placement new
@@ -45,7 +45,7 @@ public:
 
     void push_back(const T & v){ emplace_back(v); }
     void push_back(T && v){emplace_back(std::move(v));}
-    void pop_back() noexcept { std::destory_at(data() + --size_);}
+    void pop_back() noexcept { std::destroy_at(data() + --size_);}
     void clear() noexcept { std::destroy(data(), data() + size_); size_ = 0;}
 
     // raw pointer to contiguous storage
